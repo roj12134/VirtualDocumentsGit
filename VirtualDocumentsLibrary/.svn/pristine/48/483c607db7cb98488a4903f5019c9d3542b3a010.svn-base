@@ -1,0 +1,145 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package virtualdocumentslibrary;
+
+import com.mysql.jdbc.Connection;
+import com.mysql.jdbc.ResultSetMetaData;
+import com.mysql.jdbc.Statement;
+import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
+import java.io.File;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import javax.swing.JOptionPane;
+
+/**
+ * ****************************************************************************
+ * VirtualLibrary.java by Giovanni Rojas Mazariegos and Javier Alay
+ * geovaroma@gmail.com javier.alay@gmail.com
+ * 
+* Class where all the DatabBase Stuff will be. 
+ * ****************************************************************************
+ */
+public class DataBaseClass {
+    protected static MysqlDataSource dataSource = new MysqlDataSource();
+    protected static Connection connection = null;
+    protected static Statement st;
+    protected static ResultSet resultSet;
+    protected static ResultSetMetaData metaData;
+    
+    public DataBaseClass(){
+        
+    }
+    
+    public static boolean connect (String [] datos){
+        try {
+            
+            dataSource.setServerName(datos[0]);
+            dataSource.setUser(datos[1]);
+            dataSource.setPassword(datos[2]);
+            dataSource.setDatabaseName(datos[3]);
+         
+
+            // me conecto 
+
+            connection = (Connection) dataSource.getConnection();
+            return true;  // Se conecto correctamente
+            
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(null, "Error en al connectarse en Base de Datos \n "+ex,"Error al connectarse a la Base de Datos", 0);
+            return false; // No se conecto bien. 
+        }
+        
+        
+    }
+    
+    /*
+    Este updateBackup es solo para cargar la informacion de la ultima vez cuando se guardo, 
+    que solo guarda la informacion de la base de datos. 
+    */
+    public static void updateBackup (String [] datos,String fileSQL){
+        
+        
+          if(!new MySqlBackup().restoreDatabase(datos[0],datos[1], datos[2], fileSQL))
+          
+          JOptionPane.showMessageDialog(null, "<html><body><pre><p style='width: 600px;'>Error al cargar archivo SQL "+fileSQL+" </p></pre></body></html>","Error al cargar archivo .SQL", 0);
+            
+    }
+    /* 
+    Crear backup, pero solo backup de informacion. 
+    */
+    public static void commitBackup (String [] datos){
+       
+           // if(!new MySqlBackup().backupDataWithDatabase(datos[0], "3306", datos[1], datos[2], datos[3],System.getProperty("user.dir") + ""+File.separator+"src"+File.separator+"DataBase"+File.separator+"dataBackup"))
+             //       JOptionPane.showMessageDialog(null, "Error al crear backup.","Error al crear Backup",0); // solo en caso de existir error imprimira esto 
+    }
+    
+    public static void executeQuery (String consulta){
+        try {
+            
+            st = (Statement) connection.createStatement();
+         
+            st.executeUpdate(consulta);
+            
+            
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(null, "<html><body><pre><p style='width: 600px;'>Error al ingresar datos : <br/>"+ex+" </p></pre></body></html>","Error al ingresar datos a la base de datos", 0);
+            System.out.println(ex);
+        }
+    }
+    
+    /* Lo que hace este metodo es devolver la informacion de una consulta */
+    public  Object [] giveData (String consulta){
+        Object [] dataOut= null;
+        try {
+            // Aqui no es un prepared Statement porque solo es uno 
+            st = (Statement) connection.createStatement();
+            resultSet = st.executeQuery(consulta);
+            metaData = (ResultSetMetaData) resultSet.getMetaData();
+
+            int numcolumn=metaData.getColumnCount();
+            dataOut= new Object [numcolumn]; // Cuantos datos abran, seran de cuantas columnas existan. 
+            while (resultSet.next()){
+               for(int i=0;i<numcolumn;i++){
+                          dataOut[i]= resultSet.getObject(i+1); 
+                      } 
+
+            }
+
+          
+           return dataOut;
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(null, "<html><body><pre><p style='width: 600px;'>Error al ingresar datos : <br/>"+ex+" </p></pre></body></html>","Error al ingresar datos a la base de datos", 0);
+       
+            return null;
+            
+        }
+        
+         
+    } 
+
+ /* Getters de las variables, para ser usadas en cualquier clase, pero por medio del get de cada una. */
+    public static MysqlDataSource getDataSource() {
+        return dataSource;
+    }
+
+    public static Connection getConnection() {
+        return connection;
+    }
+
+    public static Statement getSt() {
+        return st;
+    }
+
+    public static ResultSet getResultSet() {
+        return resultSet;
+    }
+
+    public static ResultSetMetaData getMetaData() {
+        return metaData;
+    }
+    
+    
+    
+}
